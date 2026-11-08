@@ -1,0 +1,33 @@
+# Git and GitHub
+.git
+.gitignore
+.github/
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+*.xml
+
+# Project documentation & scripts (not needed inside container runtime)
+documentation/
+screenshots/
+scripts/
+README.md
+
+# Environment secrets
+.env
+.env.*
+*.pem
+*.key

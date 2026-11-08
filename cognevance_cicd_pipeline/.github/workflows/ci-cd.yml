@@ -1,0 +1,167 @@
+# ==============================================================================
+# Cognevance Technologies - CI/CD Pipeline Automation System
+# Level 2 Intermediate DevOps Internship CI/CD Workflow
+# ==============================================================================
+name: CI/CD Pipeline Automation
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # JOB 1: Continuous Integration (Test & Lint)
+  # ----------------------------------------------------------------------------
+  test:
+    name: "CI - Testing & Validation"
+    runs-on: ubuntu-latest
+    steps:
+      # Stage 1 – Source Code Checkout
+      - name: "Stage 1: Checkout Source Code"
+        uses: actions/checkout@v4
+
+      # Stage 2 – Python Environment Setup
+      - name: "Stage 2: Setup Python 3.11 Environment"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: "Install Dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      # Stage 3 – Automated Testing (Pytest)
+      - name: "Stage 3: Run Automated Pytest Suite"
+        run: |
+          pytest tests/ -v --junitxml=reports/pytest-report.xml
+        env:
+          FLASK_ENV: testing
+
+      # Stage 4 – Build Validation
+      - name: "Stage 4: Code Quality & Syntax Validation"
+        run: |
+          # Stop build if syntax errors or undefined names exist
+          flake8 app tests --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Exit-zero on style warnings to ensure stability
+          flake8 app tests --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      - name: "Upload Test Results"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-results
+          path: reports/pytest-report.xml
+
+  # ----------------------------------------------------------------------------
+  # JOB 2: Containerization & Registry Publishing (Docker Hub)
+  # ----------------------------------------------------------------------------
+  build-and-push:
+    name: "CD - Containerize & Push to Docker Hub"
+    needs: test
+    runs-on: ubuntu-latest
+    # Only publish to Docker Hub on merge/push to main branch (never on untrusted PRs)
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: "Checkout Source Code"
+        uses: actions/checkout@v4
+
+      - name: "Set up Docker Buildx"
+        uses: docker/setup-buildx-action@v3
+
+      # Stage 6 – Docker Hub Integration (Secrets Authentication)
+      - name: "Log in to Docker Hub"
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Stage 5 – Docker Image Build & Tagging
+      - name: "Stage 5 & 6: Build & Push Docker Image"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/cognevance-cicd-automation:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/cognevance-cicd-automation:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ----------------------------------------------------------------------------
+  # JOB 3: Continuous Deployment & Verification (AWS EC2 / Linux Host)
+  # ----------------------------------------------------------------------------
+  deploy:
+    name: "CD - Deploy to AWS EC2 & Health Verification"
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: "Checkout Deployment Configurations"
+        uses: actions/checkout@v4
+
+      # Stage 7 – Deployment via SSH to AWS EC2
+      - name: "Stage 7: Execute Remote Deployment via SSH"
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            echo "Starting deployment on remote host..."
+            cd /opt/cognevance-cicd || mkdir -p /opt/cognevance-cicd && cd /opt/cognevance-cicd
+            
+            # Pull latest container image from Docker Hub
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/cognevance-cicd-automation:latest
+            
+            # Stop existing container if running
+            docker stop cognevance-automation-app || true
+            docker rm cognevance-automation-app || true
+            
+            # Run updated container with non-root privileges & healthcheck
+            docker run -d \
+              --name cognevance-automation-app \
+              --restart unless-stopped \
+              -p 5000:5000 \
+              -e FLASK_ENV=production \
+              -e PORT=5000 \
+              ${{ secrets.DOCKERHUB_USERNAME }}/cognevance-cicd-automation:latest
+              
+            echo "Container started successfully."
+
+      # Stage 8 – Deployment Verification (Automated Health Probing)
+      - name: "Stage 8: Verify Application Health Check"
+        run: |
+          echo "Waiting 10 seconds for container startup..."
+          sleep 10
+          
+          # Health check probe against deployment target
+          HEALTH_URL="http://${{ secrets.EC2_HOST }}:5000/health"
+          echo "Probing $HEALTH_URL..."
+          
+          RESPONSE=$(curl --silent --show-error --fail --max-time 15 "$HEALTH_URL" || exit 1)
+          echo "Health check response: $RESPONSE"
+          
+          # Assert status is healthy
+          if echo "$RESPONSE" | grep -q '"status":\s*"healthy"'; then
+            echo "Deployment verification PASSED: Application is healthy."
+            exit 0
+          else
+            echo "Deployment verification FAILED: Unexpected response."
+            exit 1
+          fi

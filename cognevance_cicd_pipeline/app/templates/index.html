@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ app_name }} | {{ organization }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="theme-dark">
+    <!-- Top Bar Navigation -->
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="brand">
+                <span class="brand-title">Cognevance CI/CD Automation</span>
+            </div>
+            <nav class="nav-links">
+                <a href="#overview">Overview</a>
+                <a href="#pipeline">Workflow</a>
+                <a href="#docker">Docker</a>
+                <a href="#testing">Testing</a>
+                <a href="#internship">Internship</a>
+            </nav>
+            <div class="nav-action">
+                <a href="/health" target="_blank" class="btn btn-secondary">Health Check</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Hero & Telemetry Strip -->
+        <section id="overview" class="section hero-section">
+            <div class="container">
+                <div class="kicker">Cognevance Technologies · Level 2 Internship</div>
+                <h1 class="hero-title">DevOps CI/CD Automation Dashboard</h1>
+                <p class="hero-subtitle">Automated Continuous Integration and Continuous Deployment pipeline using GitHub Actions, Docker, Docker Hub, and Pytest.</p>
+
+                <!-- System Telemetry Grid -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <span class="metric-label">Application Status</span>
+                        <span class="metric-value text-emerald" id="app-status">ONLINE</span>
+                        <span class="metric-sub">Port 5000 · Production WSGI</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Pipeline Status</span>
+                        <span class="metric-value text-emerald">PASSING</span>
+                        <span class="metric-sub">GitHub Actions Workflow</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Docker Registry</span>
+                        <span class="metric-value text-sky">DOCKER HUB</span>
+                        <span class="metric-sub">cognevance-cicd-automation:latest</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Automated Tests</span>
+                        <span class="metric-value text-emerald">6 / 6 PASSED</span>
+                        <span class="metric-sub">Pytest Test Client Suite</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Pipeline Workflow Diagram -->
+        <section id="pipeline" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>01. End-to-End Pipeline Workflow</h2>
+                    <p>Automated execution triggered on code push or pull request to the main branch.</p>
+                </div>
+
+                <div class="workflow-steps">
+                    <div class="step-card">
+                        <div class="step-num">1</div>
+                        <h3>Code Push</h3>
+                        <p>Developer commits and pushes code to GitHub repository.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">2</div>
+                        <h3>GitHub Trigger</h3>
+                        <p>GitHub Actions webhook initializes <code>ci-cd.yml</code>.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">3</div>
+                        <h3>Setup & Deps</h3>
+                        <p>Runner configures Python 3.11 and installs requirements.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">4</div>
+                        <h3>Pytest Suite</h3>
+                        <p>Automated tests validate endpoints and error handling.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">5</div>
+                        <h3>Docker Build</h3>
+                        <p>Multi-stage Dockerfile builds <code>cicd-automation-app</code>.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">6</div>
+                        <h3>Docker Hub Push</h3>
+                        <p>Authenticated push using encrypted GitHub Secrets.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">7</div>
+                        <h3>EC2 Deployment</h3>
+                        <p>Target server pulls latest image and reloads container.</p>
+                    </div>
+                    <div class="step-card">
+                        <div class="step-num">8</div>
+                        <h3>Health Probe</h3>
+                        <p>HTTP health check ensures zero downtime.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Docker Console & Information -->
+        <section id="docker" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>02. Containerization Architecture</h2>
+                    <p>Standardized packaging with unprivileged user execution and health checking.</p>
+                </div>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <h3>Production Container Highlights</h3>
+                        <ul class="feature-list">
+                            <li><strong>Base Image:</strong> Official <code>python:3.11-slim</code> for minimal attack surface.</li>
+                            <li><strong>Security:</strong> Non-root user <code>appuser:10001</code> prevents privilege escalation.</li>
+                            <li><strong>Health Check:</strong> Built-in <code>HEALTHCHECK</code> monitors <code>/health</code> every 30 seconds.</li>
+                            <li><strong>Composition:</strong> Single-command deployment with <code>docker-compose.yml</code>.</li>
+                        </ul>
+                    </div>
+                    <div class="card">
+                        <h3>Key CLI Commands</h3>
+                        <div class="code-block">
+                            <pre><code># 1. Build container image
+docker build -t cicd-automation-app .
+
+# 2. Run container in background
+docker run -d -p 5000:5000 --name cicd-app cicd-automation-app
+
+# 3. Check health and inspect logs
+docker ps
+docker logs cicd-app
+docker inspect --format='{{.State.Health.Status}}' cicd-app</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testing Information -->
+        <section id="testing" class="section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>03. Automated Quality Assurance</h2>
+                    <p>Rigorous test suite protecting production against regressions.</p>
+                </div>
+                <div class="test-table-wrapper">
+                    <table class="test-table">
+                        <thead>
+                            <tr>
+                                <th>Test Identifier</th>
+                                <th>Target Route</th>
+                                <th>Validation Objective</th>
+                                <th>Expected Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>test_homepage_status_code_200</code></td>
+                                <td><code>GET /</code></td>
+                                <td>UI dashboard renders successfully</td>
+                                <td><span class="status-badge">200 OK</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>test_health_endpoint_healthy</code></td>
+                                <td><code>GET /health</code></td>
+                                <td>Operational health probe for Docker</td>
+                                <td><span class="status-badge">200 OK</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>test_api_status_valid_json</code></td>
+                                <td><code>GET /api/status</code></td>
+                                <td>Valid JSON schema with system status</td>
+                                <td><span class="status-badge">200 OK</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>test_api_info_endpoint</code></td>
+                                <td><code>GET /api/info</code></td>
+                                <td>Tech stack metadata without credential leakage</td>
+                                <td><span class="status-badge">200 OK</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>test_invalid_routes_return_404_json</code></td>
+                                <td><code>GET /nonexistent</code></td>
+                                <td>Clean JSON error handling on unknown URLs</td>
+                                <td><span class="status-badge">404 Not Found</span></td>
+                            </tr>
+                            <tr>
+                                <td><code>test_method_not_allowed_handling</code></td>
+                                <td><code>POST /health</code></td>
+                                <td>Strict HTTP method safety validation</td>
+                                <td><span class="status-badge">405 Not Allowed</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Internship Details & Mentorship -->
+        <section id="internship" class="section">
+            <div class="container">
+                <div class="internship-box">
+                    <h3>Cognevance Technologies · Cloud Computing & DevOps Internship</h3>
+                    <p><strong>Assignment Level:</strong> Level 2 – Intermediate Project</p>
+                    <p><strong>Objective:</strong> Automated CI/CD pipeline building, testing, containerizing, and deploying a web application with GitHub Actions and Docker Hub.</p>
+                    <p><strong>Deliverables:</strong> Source code, Dockerfile, docker-compose.yml, GitHub Actions workflow, Pytest suites, scripts, and complete technical guides.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-content">
+            <p>&copy; 2026 Cognevance Technologies · Cloud Computing & DevOps Internship Program</p>
+            <div class="footer-links">
+                <a href="/api/status">API Status</a>
+                <span>·</span>
+                <a href="/api/info">Tech Info</a>
+                <span>·</span>
+                <a href="/health">Health Endpoint</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
